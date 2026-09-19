@@ -1,2 +1,4 @@
 bleak>=0.21
-garminconnect>=0.3
+# Testado contra a 0.3.x. Versoes diferentes dessa lib ja tiveram
+# assinaturas de login/token distintas, entao travamos a minor por seguranca.
+garminconnect>=0.3,<0.4

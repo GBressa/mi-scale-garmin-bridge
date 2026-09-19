@@ -197,18 +197,24 @@ def main():
     parser.add_argument("--timeout", type=int, default=60, help="Segundos de escuta (padrao 60)")
     args = parser.parse_args()
 
-    if args.discover:
-        asyncio.run(discover_scales(args.timeout))
-        return
-
-    if not args.mac:
+    if not args.mac and not args.discover:
         parser.error("--mac e obrigatorio (ou defina a env var MI_SCALE_MAC). Use --discover para encontrar o MAC da sua balanca.")
 
-    if args.raw:
-        asyncio.run(raw_dump(args.mac, args.timeout))
-        return
+    try:
+        if args.discover:
+            asyncio.run(discover_scales(args.timeout))
+            return
 
-    weight = asyncio.run(wait_for_stable_weight(args.mac, args.timeout))
+        if args.raw:
+            asyncio.run(raw_dump(args.mac, args.timeout))
+            return
+
+        weight = asyncio.run(wait_for_stable_weight(args.mac, args.timeout))
+    except Exception as exc:
+        log(f"Erro ao acessar o Bluetooth: {exc}")
+        log("Verifique se o Bluetooth esta ligado e se o adaptador tem suporte a BLE.")
+        raise SystemExit(1) from exc
+
     if weight is not None and args.upload:
         upload_to_garmin(weight)
 

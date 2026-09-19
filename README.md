@@ -1,94 +1,96 @@
+*[Versão em português](README.pt-BR.md)*
+
 # mi-scale-garmin-bridge
 
-Lê o peso de balanças Xiaomi Mi Scale via Bluetooth LE — sem precisar do
-app oficial (Mi Fit / Zepp Life) — e, opcionalmente, sobe o resultado
-direto para o Garmin Connect como um weigh-in manual.
+Reads the weight from Xiaomi Mi Scale devices over Bluetooth LE — no
+need for the official app (Mi Fit / Zepp Life) — and optionally uploads
+the result straight to Garmin Connect as a manual weigh-in.
 
-Testado numa **Mi Smart Scale 2**. O protocolo usado (serviço Bluetooth
-SIG padrão "Weight Scale", UUID `0x181D`) é comum a várias balanças
-Xiaomi, mas o layout exato dos bytes pode variar entre modelos e
-firmwares — não confirmado em outros aparelhos. Se não funcionar no seu,
-rode com `--raw` e abra uma issue com a saída.
+Tested on a **Mi Smart Scale 2**. The protocol used (the standard
+Bluetooth SIG "Weight Scale" service, UUID `0x181D`) is shared by
+several Xiaomi scales, but the exact byte layout may vary between
+models/firmwares — not confirmed on other devices. If it doesn't work
+on yours, run with `--raw` and open an issue with the output.
 
-## Por que
+## Why
 
-A balança transmite o peso via *advertisement* BLE (broadcast, sem
-pareamento) enquanto alguém está em cima dela. Isso significa que dá
-para capturar a leitura direto pelo Bluetooth do computador, sem depender
-do app do fabricante.
+The scale broadcasts the weight as a BLE advertisement (no pairing
+required) while someone is standing on it. That means you can capture
+the reading straight from your computer's Bluetooth adapter, without
+relying on the manufacturer's app.
 
-## Instalação
+## Install
 
 ```bash
 pip install -r requirements.txt
 ```
 
-`garminconnect` só é necessário se você for usar `--upload`.
+`garminconnect` is only needed if you plan to use `--upload`.
 
-## Descobrir o MAC da sua balança
+## Find your scale's MAC address
 
 ```bash
 python mi_scale_reader.py --discover
 ```
 
-Sobe na balança assim que o comando rodar — ele lista os dispositivos
-próximos que anunciam o serviço Weight Scale.
+Step on the scale as soon as the command starts — it lists nearby
+devices advertising the Weight Scale service.
 
-## Uso
+## Usage
 
 ```bash
-# só ler o peso
+# just read the weight
 python mi_scale_reader.py --mac AA:BB:CC:DD:EE:FF
 
-# ler e subir pro Garmin Connect
+# read and upload to Garmin Connect
 python mi_scale_reader.py --mac AA:BB:CC:DD:EE:FF --upload
 
-# esperar mais tempo (padrão: 60s)
+# wait longer (default: 60s)
 python mi_scale_reader.py --mac AA:BB:CC:DD:EE:FF --timeout 90
 
-# modo diagnóstico: dump bruto de todos os pacotes recebidos
+# diagnostic mode: raw dump of every packet received
 python mi_scale_reader.py --mac AA:BB:CC:DD:EE:FF --raw
 ```
 
-Para não digitar `--mac` toda vez, defina a variável de ambiente
-`MI_SCALE_MAC` com o endereço da sua balança.
+To avoid typing `--mac` every time, set the `MI_SCALE_MAC` environment
+variable to your scale's address.
 
-## Upload para o Garmin Connect
+## Uploading to Garmin Connect
 
-Usa a biblioteca [`garminconnect`](https://pypi.org/project/garminconnect/)
-(não oficial). No primeiro `--upload`, o script pede email, senha e
-código MFA (se sua conta usar) interativamente no terminal — nada é
-salvo em texto puro. A sessão autenticada fica cacheada em
-`~/.mi_scale_garmin_tokens`, fora deste repositório, e é reaproveitada
-nas próximas execuções.
+Uses the [`garminconnect`](https://pypi.org/project/garminconnect/)
+library (unofficial). On the first `--upload`, the script asks for your
+Garmin email, password, and MFA code (if your account uses one)
+interactively in the terminal — nothing is ever saved in plain text.
+The authenticated session is cached at `~/.mi_scale_garmin_tokens`,
+outside this repository, and reused on future runs.
 
-Se você usa [Intervals.icu](https://intervals.icu) com a conta Garmin
-já sincronizada, o peso aparece lá automaticamente — não precisa de uma
-segunda integração.
+If you use [Intervals.icu](https://intervals.icu) with your Garmin
+account already synced, the weight shows up there automatically — no
+second integration needed.
 
-## Atalho no Windows
+## Windows shortcut
 
-`weigh.bat` roda o upload com um clique. Edite o arquivo (ou defina
-`MI_SCALE_MAC` como variável de ambiente do sistema) antes de usar.
+`weigh.bat` runs the upload with a double-click. Edit the file (or set
+`MI_SCALE_MAC` as a system environment variable) before using it.
 
-## Protocolo (para quem quiser adaptar para outro modelo)
+## Protocol (for anyone adapting this to another model)
 
 ```
-byte0        = controle (bit 0x20 = peso estabilizado/final)
-bytes1-2     = peso, uint16 little-endian, unidade = raw / 200.0 (kg)
-bytes3-9     = timestamp do RTC interno da balança (não usado aqui)
+byte0        = control (bit 0x20 = weight stabilized/final)
+bytes1-2     = weight, little-endian uint16, unit = raw / 200.0 (kg)
+bytes3-9     = the scale's internal RTC timestamp (unused here)
 ```
 
-Confirmado comparando os valores decodificados contra uma pesagem real:
-a leitura converge para o mesmo peso nos pacotes marcados como estáveis
-pelo bit `0x20` do byte de controle.
+Confirmed by comparing decoded values against a real weigh-in: the
+reading converges on the same weight in the packets flagged as stable
+by the `0x20` bit of the control byte.
 
-## Aviso
+## Disclaimer
 
-Projeto não oficial, sem afiliação com a Xiaomi ou a Garmin. Protocolo
-obtido por engenharia reversa das transmissões BLE públicas do
-dispositivo — use por sua conta e risco.
+Unofficial project, not affiliated with Xiaomi or Garmin. Protocol
+obtained by reverse-engineering the device's public BLE broadcasts —
+use at your own risk.
 
-## Licença
+## License
 
-MIT — veja [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
